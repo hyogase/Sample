@@ -18,16 +18,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="4dp"
-            android:text="Select an image to recognize text"/>
+            android:text="请选择图片"/>
         <LinearLayout
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content">
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select Image"
+                android:text="箱号识别图片"
                 android:id="@+id/buttonSelectImage"
                 android:onClick="selectImage"/>
 
