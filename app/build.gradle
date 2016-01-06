@@ -28,5 +28,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile files('libs/gson-2.3.1.jar')
     compile 'com.microsoft.projectoxford:vision:0.4.91'
-    compile files('libs/ksoap2-android-assembly-3.0.0-jar-with-dependencies.jar')
+    compile files('libs/ksoap2-android-assembly-3.5.0-jar-with-dependencies.jar')
 }

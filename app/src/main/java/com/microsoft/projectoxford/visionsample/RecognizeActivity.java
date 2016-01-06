@@ -37,6 +37,8 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -66,7 +68,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
+import org.ksoap2.SoapEnvelope;
+import org.ksoap2.SoapFault;
+import org.ksoap2.serialization.SoapObject;
+import org.ksoap2.serialization.SoapSerializationEnvelope;
+import org.ksoap2.transport.HttpTransportSE;
+import org.xmlpull.v1.XmlPullParserException;
+
 public class RecognizeActivity extends ActionBarActivity {
+
+
 
     // Flag to indicate which task is to be performed.
     private static final int REQUEST_SELECT_IMAGE = 0;
@@ -97,6 +108,9 @@ public class RecognizeActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recognize);
 
+
+
+
         if (client==null){
             client = new VisionServiceRestClient(getString(R.string.subscription_key));
         }
@@ -104,6 +118,8 @@ public class RecognizeActivity extends ActionBarActivity {
         mButtonSelectImage = (Button)findViewById(R.id.buttonSelectImage);
         mEditText = (EditText)findViewById(R.id.editTextResult);
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -271,4 +287,141 @@ public class RecognizeActivity extends ActionBarActivity {
             mButtonSelectImage.setEnabled(true);
         }
     }
+
+    // 定义webservice的命名空间
+    public static final String SERVICE_NAMESPACE = "http://testoracle/";
+    // 定义webservice提供服务的url
+    public static final String SERVICE_URL = "http://10.28.32.160:8080/testoracle/services/HelloService?wsdl";
+
+    //testInsertOracleButton
+    // Called when the "testInsertOracle" button is clicked.
+    public void testInsertOracleButton(View view) {
+        mEditText.setText("");
+        // 开启一个子线程，进行网络操作，等待有返回结果，使用handler通知UI
+        new Thread(networkTask).start();
+
+
+//        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        if(intent.resolveActivity(getPackageManager()) != null) {
+//            // Save the photo taken to a temporary file.
+//            File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+//            try {
+//                File file = File.createTempFile("IMG_", ".jpg", storageDir);
+//                mUriPhotoTaken = Uri.fromFile(file);
+//                intent.putExtra(MediaStore.EXTRA_OUTPUT, mUriPhotoTaken);
+//                startActivityForResult(intent, REQUEST_TAKE_PHOTO);
+//            } catch (IOException e) {
+//                setInfo(e.getMessage());
+//            }
+//        }
+//        Intent intent;
+//        intent = new Intent(RecognizeActivity.this, com.microsoft.projectoxford.visionsample.helper.SelectImageActivity.class);
+//        startActivityForResult(intent, REQUEST_SELECT_IMAGE);
+    }
+
+    Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Bundle data = msg.getData();
+            String val = data.getString("value");
+//            Log.i("mylog", "请求结果为-->" + val);
+            // TODO
+            // UI界面的更新等相关操作
+            mEditText.setText(val);
+//        setInfo(msg);
+
+        }
+    };
+
+    /**
+     * 网络操作相关的子线程
+     */
+    Runnable networkTask = new Runnable() {
+
+        @Override
+        public void run() {
+            // TODO
+            // 在这里进行 http request.网络请求相关操作
+            Message msg = new Message();
+            Bundle data = new Bundle();
+
+            try {
+                String var = testInsertOracle("test", "test1");
+                data.putString("value", var);
+                msg.setData(data);
+                handler.sendMessage(msg);
+//                mEditText.setText(msg);
+            }
+            catch (Exception e) {
+                // TODO Auto-generated catch block
+//            e.printStackTrace();
+                Log.e("error",e.getMessage());
+            }
+
+
+        }
+    };
+    // 调用远程webservice获取省份列表
+    public String testInsertOracle(String tpmc,String sctpdate) {
+        String tmp="";
+        // 调用 的方法
+        String methodName = "testInsertOracle";
+//        String methodName = "greetings";
+
+        try {
+
+
+            // 实例化SoapObject对象
+            SoapObject soapObject = new SoapObject(SERVICE_NAMESPACE,
+                    methodName);
+            soapObject.addProperty("param1",tpmc);
+            soapObject.addProperty("param2",sctpdate);
+            // 使用SOAP1.1协议创建Envelop对象
+            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(
+                    SoapEnvelope.VER11);
+            envelope.bodyOut = soapObject;
+            // 设置与.NET提供的webservice保持较好的兼容性
+
+//            envelope.dotNet = true;
+            envelope.dotNet = false;
+            envelope.setOutputSoapObject(soapObject);
+            // 创建HttpTransportSE传输对象
+            HttpTransportSE ht = new HttpTransportSE(SERVICE_URL);
+            ht.debug = true;
+            // 调用webservice
+            ht.call(SERVICE_NAMESPACE + methodName, envelope);
+            Log.w(getClass().getName(), ht.requestDump);
+//            ht.call(null, envelope);
+            if (envelope.getResponse() != null) {
+                // 获取服务器响应返回的SOAP消息
+                SoapObject result = (SoapObject) envelope.bodyIn;
+//                SoapObject detail = (SoapObject) result.getProperty(methodName
+//                        + "Result");
+                // 解析服务器响应的SOAP消息
+                tmp=result.getProperty(0).toString();
+            }
+        }
+        catch (Exception e) {
+            // TODO Auto-generated catch block
+//            e.printStackTrace();
+            tmp=e.getMessage();
+        }
+//        catch (SoapFault e) {
+//            // TODO Auto-generated catch block
+////            e.printStackTrace();
+//            tmp=e.getMessage();
+//        }
+//        catch (IOException e) {
+//            // TODO Auto-generated catch block
+////            e.printStackTrace();
+//            tmp=e.getMessage();
+//        } catch (XmlPullParserException e) {
+//            // TODO Auto-generated catch block
+////            e.printStackTrace();
+//            tmp=e.getMessage();
+//        }
+        return tmp;
+    }
+
 }

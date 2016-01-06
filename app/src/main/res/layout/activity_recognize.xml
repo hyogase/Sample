@@ -40,6 +40,13 @@
                 android:background="#E0E0E0"
                 android:layout_margin="6dp"/>
 
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="testInsert"
+                android:id="@+id/button"
+                android:onClick="testInsertOracleButton"/>
+
         </LinearLayout>
 
         <LinearLayout
