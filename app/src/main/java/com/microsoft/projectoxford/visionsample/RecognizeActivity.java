@@ -67,6 +67,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ksoap2.SoapEnvelope;
 import org.ksoap2.SoapFault;
@@ -84,6 +87,7 @@ public class RecognizeActivity extends ActionBarActivity {
 
     // The button to select an image
     private Button mButtonSelectImage;
+    private Button mButtonUpload;
 
     // The URI of the image selected to detect.
     private Uri mImageUri;
@@ -93,6 +97,7 @@ public class RecognizeActivity extends ActionBarActivity {
 
     // The edit to show status and result.
     private EditText mEditText;
+    private EditText mEditTextXH;
 
     private VisionServiceClient client;
 
@@ -117,6 +122,8 @@ public class RecognizeActivity extends ActionBarActivity {
 
         mButtonSelectImage = (Button)findViewById(R.id.buttonSelectImage);
         mEditText = (EditText)findViewById(R.id.editTextResult);
+        mButtonUpload = (Button)findViewById(R.id.ButtontestInsertOracle);
+        mEditTextXH = (EditText)findViewById(R.id.editTextXH);
     }
 
 
@@ -203,6 +210,7 @@ public class RecognizeActivity extends ActionBarActivity {
                                 + "x" + mBitmap.getHeight());
 
                         doRecognize();
+
                     }
                 }
                 break;
@@ -240,6 +248,19 @@ public class RecognizeActivity extends ActionBarActivity {
 
         return result;
     }
+
+    public void doRecognizeXH() {
+        mButtonUpload.setEnabled(false);
+        mEditTextXH.setText("Analyzing...");
+
+        try {
+            new doRequestXH().execute();
+        } catch (Exception e)
+        {
+            mEditTextXH.setText("Error encountered. Exception is: " + e.toString());
+        }
+    }
+
 
     private class doRequest extends AsyncTask<String, String, String> {
         // Store error message
@@ -283,11 +304,136 @@ public class RecognizeActivity extends ActionBarActivity {
                 }
 
                 mEditText.setText(result);
+                doRecognizeXH();
             }
             mButtonSelectImage.setEnabled(true);
         }
     }
+    private class doRequestXH extends AsyncTask<String, String, String> {
+        // Store error message
+        private Exception e = null;
 
+        public doRequestXH() {
+        }
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                return process();
+            } catch (Exception e) {
+                this.e = e;    // Store error
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String data) {
+            super.onPostExecute(data);
+            // Display based on error existence
+
+            if (e != null) {
+                mEditTextXH.setText("Error: " + e.getMessage());
+                this.e = null;
+            } else {
+                String Ori=mEditText.getText().toString();
+                String Aft=replaceBlank(Ori);
+                String[] strings=Aft.split(" ");
+
+                String part1="";
+                String part2="";
+                String part3;
+                String result = "";
+                for (String str: strings){
+                    //part1
+                    switch (str.length())
+                    {
+                        //part1
+                        case 4:
+                            if (part1.equals("")) {
+                                if (str.substring(3).equals("U")) {
+                                    part1 = str;
+                                }
+                            }
+                            break;
+                        //part2
+                        case 6:
+                            if (part2.equals("")) {
+                                if (isNumeric(str)) {
+                                    part2 = str;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                String tmp=part1+part2;
+                char[] chs=tmp.toCharArray();
+                double it=0;
+                for (int i=0;i<tmp.length();i++){
+                    int tmpit=(int)chs[i];
+                    // 0-9
+                    if (tmpit<=57 && tmpit>=48)
+                    {
+                        it = it + (tmpit-48) * Math.pow(2,i);
+                    }
+                    //A
+                    if (tmpit==65 )
+                    {
+                        it = it + (tmpit-65+10)* Math.pow(2,i);
+                    }
+                    //B-K
+                    if (tmpit<=75 && tmpit>=66)
+                    {
+                        it = it + (tmpit-66+12)* Math.pow(2,i);
+                    }
+                    //L-U
+                    if (tmpit<=85 && tmpit>=76)
+                    {
+                        it = it + (tmpit-76+23)* Math.pow(2,i);
+                    }
+                    //V-Z
+                    if (tmpit<=90 && tmpit>=86)
+                    {
+                        it = it + (tmpit-85+34)* Math.pow(2,i);
+                    }
+                }
+                it = it % 11;
+                if ( it==10)
+                {
+                    it=0;
+                }
+                int intit= (int) it;
+                part3=Integer.toString(intit);
+                result=part1+part2+part3;
+                mEditTextXH.setText(result);
+            }
+            mButtonUpload.setEnabled(true);
+        }
+    }
+    // judge all numbers
+    private boolean isNumeric(String str)
+    {
+        for (int i = str.length() ; --i>=0 ; )
+        {
+            if (!Character.isDigit(str.charAt ( i ) ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    private String replaceBlank(String str) {
+        String dest = "";
+        if (str!=null) {
+//            Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+            Pattern p = Pattern.compile("\n");
+            Matcher m = p.matcher(str);
+            dest = m.replaceAll(" ");
+        }
+        return dest;
+    }
     // 定义webservice的命名空间
     public static final String SERVICE_NAMESPACE = "http://testoracle/";
     // 定义webservice提供服务的url

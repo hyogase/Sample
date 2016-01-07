@@ -40,12 +40,25 @@
                 android:background="#E0E0E0"
                 android:layout_margin="6dp"/>
 
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="testInsert"
-                android:id="@+id/button"
+                android:text="保存"
+                android:id="@+id/ButtontestInsertOracle"
                 android:onClick="testInsertOracleButton"/>
+            <EditText
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:id="@+id/editTextXH" />
 
         </LinearLayout>
 
