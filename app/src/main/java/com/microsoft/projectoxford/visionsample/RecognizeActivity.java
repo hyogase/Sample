@@ -78,6 +78,9 @@ import org.ksoap2.serialization.SoapSerializationEnvelope;
 import org.ksoap2.transport.HttpTransportSE;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
 public class RecognizeActivity extends ActionBarActivity {
 
 
@@ -493,7 +496,10 @@ public class RecognizeActivity extends ActionBarActivity {
             Bundle data = new Bundle();
 
             try {
-                String var = testInsertOracle("test", "test1");
+                String XH=mEditTextXH.getText().toString();
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+                String scptdate=df.format(new Date());
+                String var = testInsertOracle(XH, scptdate);
                 data.putString("value", var);
                 msg.setData(data);
                 handler.sendMessage(msg);
