@@ -42,6 +42,7 @@ import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -498,9 +499,13 @@ public class RecognizeActivity extends ActionBarActivity {
             try {
                 String XH=mEditTextXH.getText().toString();
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+                SimpleDateFormat df1 = new SimpleDateFormat("yyyyMMddHHmmss");
                 String scptdate=df.format(new Date());
-                String var = testInsertOracle(XH, scptdate);
-                data.putString("value", var);
+                String scptdate1=df1.format(new Date());
+                String var1 = testInsertOracle(XH, scptdate);
+                String var2 = testUpload(XH, scptdate1);
+                String result = var1 +"\n"+var2;
+                data.putString("value", result);
                 msg.setData(data);
                 handler.sendMessage(msg);
 //                mEditText.setText(msg);
@@ -522,8 +527,6 @@ public class RecognizeActivity extends ActionBarActivity {
 //        String methodName = "greetings";
 
         try {
-
-
             // 实例化SoapObject对象
             SoapObject soapObject = new SoapObject(SERVICE_NAMESPACE,
                     methodName);
@@ -575,5 +578,114 @@ public class RecognizeActivity extends ActionBarActivity {
 //        }
         return tmp;
     }
+    //读取android sdcard上的图片
+    public String testUpload(String XH, String scptdate){
+        String tmp = "";
+        try{
 
+            mBitmap = ImageHelper.loadSizeLimitedBitmapFromUri(
+                    mImageUri, getContentResolver());
+            if (mBitmap != null) {
+                // Show the image on screen.
+//                ImageView imageView = (ImageView) findViewById(R.id.selectedImage);
+//                imageView.setImageBitmap(mBitmap);
+//
+//                // Add detection log.
+//                Log.d("AnalyzeActivity", "Image: " + mImageUri + " resized to " + mBitmap.getWidth()
+//                        + "x" + mBitmap.getHeight());
+//
+//                doRecognize();
+
+
+
+//            String srcUrl = "/sdcard/"; //路径
+//
+//            String fileName = "aa.jpg";  //文件名
+//
+//            FileInputStream fis = new FileInputStream(srcUrl + fileName);
+//
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+
+            byte[] bitmapBytes = baos.toByteArray();
+            String uploadBuffer = Base64.encodeToString(bitmapBytes, Base64.DEFAULT);
+
+//            byte[] buffer = new byte[1024];
+//
+//            int count = 0;
+//
+//            while((count = fis.read(buffer)) >= 0){
+//
+//                baos.write(buffer, 0, count);
+//
+//            }
+
+//            String uploadBuffer = new String(Base64.encode(baos.toByteArray()));  //进行Base64编码
+
+            String methodName = "uploadImage";
+
+//            String XH=mEditTextXH.getText().toString();
+//            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+//            String scptdate=df.format(new Date());
+            String fileName=XH + scptdate+".jpg";
+//            String fileName="test.jpg";
+
+            tmp=connectWebService(methodName, fileName, uploadBuffer);   //调用webservice
+
+            Log.i("connectWebService", "start");
+            baos.flush();
+            baos.close();
+            }
+//            fis.close();
+
+        }catch(Exception e){
+//            e.printStackTrace();
+            tmp=e.getMessage();
+        }
+        return tmp;
+    }
+
+    private String connectWebService(String methodName,String fileName, String imageBuffer) {
+        String tmp="";
+        String namespace = SERVICE_NAMESPACE;  // 命名空间，即服务器端得接口，注：后缀没加 .wsdl，
+
+        //服务器端我是用x-fire实现webservice接口的
+
+        String url = SERVICE_URL;   //对应的url
+
+        //以下就是 调用过程了，不明白的话 请看相关webservice文档
+
+        SoapObject soapObject = new SoapObject(namespace, methodName);
+
+        soapObject.addProperty("filename", fileName);  //参数1   图片名
+
+        soapObject.addProperty("image", imageBuffer);   //参数2  图片字符串
+
+        SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(
+
+                SoapEnvelope.VER10);
+
+        envelope.dotNet = false;
+
+        envelope.setOutputSoapObject(soapObject);
+
+        HttpTransportSE httpTranstation = new HttpTransportSE(url);
+
+        try {
+
+            httpTranstation.call(namespace, envelope);
+
+            Object result = envelope.getResponse();
+            tmp=result.toString();;
+            Log.i("connectWebService", result.toString());
+
+        } catch (Exception e) {
+
+//            e.printStackTrace();
+            tmp=e.getMessage();
+        }
+
+        return tmp;
+
+    }
 }
