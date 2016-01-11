@@ -34,6 +34,7 @@ package com.microsoft.projectoxford.visionsample;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -85,7 +86,6 @@ import java.text.SimpleDateFormat;
 public class RecognizeActivity extends ActionBarActivity {
 
 
-
     // Flag to indicate which task is to be performed.
     private static final int REQUEST_SELECT_IMAGE = 0;
 
@@ -111,6 +111,8 @@ public class RecognizeActivity extends ActionBarActivity {
 
     // The URI of photo taken with camera
     private Uri mUriPhotoTaken;
+    private float scaleHeight;
+    private Matrix matrix;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,18 +120,15 @@ public class RecognizeActivity extends ActionBarActivity {
         setContentView(R.layout.activity_recognize);
 
 
-
-
-        if (client==null){
+        if (client == null) {
             client = new VisionServiceRestClient(getString(R.string.subscription_key));
         }
 
-        mButtonSelectImage = (Button)findViewById(R.id.buttonSelectImage);
-        mEditText = (EditText)findViewById(R.id.editTextResult);
-        mButtonUpload = (Button)findViewById(R.id.ButtontestInsertOracle);
-        mEditTextXH = (EditText)findViewById(R.id.editTextXH);
+        mButtonSelectImage = (Button) findViewById(R.id.buttonSelectImage);
+        mEditText = (EditText) findViewById(R.id.editTextResult);
+        mButtonUpload = (Button) findViewById(R.id.ButtontestInsertOracle);
+        mEditTextXH = (EditText) findViewById(R.id.editTextXH);
     }
-
 
 
     @Override
@@ -160,12 +159,12 @@ public class RecognizeActivity extends ActionBarActivity {
 
 
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if(intent.resolveActivity(getPackageManager()) != null) {
+        if (intent.resolveActivity(getPackageManager()) != null) {
             // Save the photo taken to a temporary file.
             File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
             try {
                 File file = File.createTempFile("IMG_", ".jpg", storageDir);
-               mUriPhotoTaken = Uri.fromFile(file);
+                mUriPhotoTaken = Uri.fromFile(file);
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, mUriPhotoTaken);
                 startActivityForResult(intent, REQUEST_TAKE_PHOTO);
             } catch (IOException e) {
@@ -176,18 +175,20 @@ public class RecognizeActivity extends ActionBarActivity {
 //        intent = new Intent(RecognizeActivity.this, com.microsoft.projectoxford.visionsample.helper.SelectImageActivity.class);
 //        startActivityForResult(intent, REQUEST_SELECT_IMAGE);
     }
+
     // Set the information panel on screen.
     private void setInfo(String info) {
         TextView textView = (TextView) findViewById(R.id.info);
         textView.setText(info);
     }
+
     // Called when image selection is done.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d("AnalyzeActivity", "onActivityResult");
         switch (requestCode) {
             case REQUEST_SELECT_IMAGE:
-                if(resultCode == RESULT_OK) {
+                if (resultCode == RESULT_OK) {
 
 //                    Uri imageUri;
 //                    if (data == null || data.getData() == null) {
@@ -230,8 +231,7 @@ public class RecognizeActivity extends ActionBarActivity {
 
         try {
             new doRequest().execute();
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             mEditText.setText("Error encountered. Exception is: " + e.toString());
         }
     }
@@ -242,6 +242,8 @@ public class RecognizeActivity extends ActionBarActivity {
         // Put the image into an input stream for detection.
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+//        mBitmap.compress(Bitmap.CompressFormat.PNG, 100, output); // 640K
+//        mBitmap.compress(Bitmap.CompressFormat.JPEG, 50, output); //588
         ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
 
         OCR ocr;
@@ -253,14 +255,63 @@ public class RecognizeActivity extends ActionBarActivity {
         return result;
     }
 
+    private Bitmap imageZoom(Bitmap bitMap) {
+        //图片允许最大空间   单位：KB
+        Bitmap bitmapr=null;
+        double maxSize = 50.00;
+        //将bitmap放至数组中，意在bitmap的大小（与实际读取的原文件要大）
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitMap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] b = baos.toByteArray();
+        //将字节换成KB
+        double mid = b.length / 1024;
+        //判断bitmap占用空间是否大于允许最大空间  如果大于则压缩 小于则不压缩
+        if (mid > maxSize) {
+            //获取bitmap大小 是允许最大大小的多少倍
+            double i = mid / maxSize;
+            //开始压缩  此处用到平方根 将宽带和高度压缩掉对应的平方根倍 （1.保持刻度和高度和原bitmap比率一致，压缩后也达到了最大大小占用空间的大小）
+            bitmapr = zoomImage(bitMap, bitMap.getWidth() / Math.sqrt(i),
+                    bitMap.getHeight() / Math.sqrt(i));
+        }
+        return bitmapr;
+    }
+
+    /***
+     * .         * 图片的缩放方法
+     * .         *
+     *
+     * @param bgimage ：源图片资源
+     *                .         * @param newWidth
+     *                .         *            ：缩放后宽度
+     *                .         * @param newHeight
+     *                ：缩放后高度
+     * @return
+     */
+    public Bitmap zoomImage(Bitmap bgimage, double newWidth,
+                            double newHeight) {
+        // 获取这个图片的宽和高
+        float width = bgimage.getWidth();
+        float height = bgimage.getHeight();
+        // 创建操作图片用的matrix对象
+        Matrix matrix = new Matrix();
+        // 计算宽高缩放率
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // 缩放图片动作
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap bitmap = Bitmap.createBitmap(bgimage, 0, 0, (int) width,
+                (int) height, matrix, true);
+        return bitmap;
+    }
+
+
     public void doRecognizeXH() {
         mButtonUpload.setEnabled(false);
         mEditTextXH.setText("Analyzing...");
 
         try {
             new doRequestXH().execute();
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             mEditTextXH.setText("Error encountered. Exception is: " + e.toString());
         }
     }
@@ -313,6 +364,7 @@ public class RecognizeActivity extends ActionBarActivity {
             mButtonSelectImage.setEnabled(true);
         }
     }
+
     private class doRequestXH extends AsyncTask<String, String, String> {
         // Store error message
         private Exception e = null;
@@ -340,18 +392,17 @@ public class RecognizeActivity extends ActionBarActivity {
                 mEditTextXH.setText("Error: " + e.getMessage());
                 this.e = null;
             } else {
-                String Ori=mEditText.getText().toString();
-                String Aft=replaceBlank(Ori);
-                String[] strings=Aft.split(" ");
+                String Ori = mEditText.getText().toString();
+                String Aft = replaceBlank(Ori);
+                String[] strings = Aft.split(" ");
 
-                String part1="";
-                String part2="";
+                String part1 = "";
+                String part2 = "";
                 String part3;
                 String result = "";
-                for (String str: strings){
+                for (String str : strings) {
                     //part1
-                    switch (str.length())
-                    {
+                    switch (str.length()) {
                         //part1
                         case 4:
                             if (part1.equals("")) {
@@ -372,65 +423,58 @@ public class RecognizeActivity extends ActionBarActivity {
                             break;
                     }
                 }
-                String tmp=part1+part2;
-                char[] chs=tmp.toCharArray();
-                double it=0;
-                for (int i=0;i<tmp.length();i++){
-                    int tmpit=(int)chs[i];
+                String tmp = part1 + part2;
+                char[] chs = tmp.toCharArray();
+                double it = 0;
+                for (int i = 0; i < tmp.length(); i++) {
+                    int tmpit = (int) chs[i];
                     // 0-9
-                    if (tmpit<=57 && tmpit>=48)
-                    {
-                        it = it + (tmpit-48) * Math.pow(2,i);
+                    if (tmpit <= 57 && tmpit >= 48) {
+                        it = it + (tmpit - 48) * Math.pow(2, i);
                     }
                     //A
-                    if (tmpit==65 )
-                    {
-                        it = it + (tmpit-65+10)* Math.pow(2,i);
+                    if (tmpit == 65) {
+                        it = it + (tmpit - 65 + 10) * Math.pow(2, i);
                     }
                     //B-K
-                    if (tmpit<=75 && tmpit>=66)
-                    {
-                        it = it + (tmpit-66+12)* Math.pow(2,i);
+                    if (tmpit <= 75 && tmpit >= 66) {
+                        it = it + (tmpit - 66 + 12) * Math.pow(2, i);
                     }
                     //L-U
-                    if (tmpit<=85 && tmpit>=76)
-                    {
-                        it = it + (tmpit-76+23)* Math.pow(2,i);
+                    if (tmpit <= 85 && tmpit >= 76) {
+                        it = it + (tmpit - 76 + 23) * Math.pow(2, i);
                     }
                     //V-Z
-                    if (tmpit<=90 && tmpit>=86)
-                    {
-                        it = it + (tmpit-85+34)* Math.pow(2,i);
+                    if (tmpit <= 90 && tmpit >= 86) {
+                        it = it + (tmpit - 85 + 34) * Math.pow(2, i);
                     }
                 }
                 it = it % 11;
-                if ( it==10)
-                {
-                    it=0;
+                if (it == 10) {
+                    it = 0;
                 }
-                int intit= (int) it;
-                part3=Integer.toString(intit);
-                result=part1+part2+part3;
+                int intit = (int) it;
+                part3 = Integer.toString(intit);
+                result = part1 + part2 + part3;
                 mEditTextXH.setText(result);
             }
             mButtonUpload.setEnabled(true);
         }
     }
+
     // judge all numbers
-    private boolean isNumeric(String str)
-    {
-        for (int i = str.length() ; --i>=0 ; )
-        {
-            if (!Character.isDigit(str.charAt ( i ) ) )
-            {
+    private boolean isNumeric(String str) {
+        for (int i = str.length(); --i >= 0; ) {
+            if (!Character.isDigit(str.charAt(i))) {
                 return false;
             }
         }
         return true;
     }
+
     private String replaceBlank(String str) {
         String dest = "";
-        if (str!=null) {
+        if (str != null) {
 //            Pattern p = Pattern.compile("\\s*|\t|\r|\n");
             Pattern p = Pattern.compile("\n");
             Matcher m = p.matcher(str);
@@ -438,6 +482,7 @@ public class RecognizeActivity extends ActionBarActivity {
         }
         return dest;
     }
+
     // 定义webservice的命名空间
     public static final String SERVICE_NAMESPACE = "http://testoracle/";
     // 定义webservice提供服务的url
@@ -497,31 +542,31 @@ public class RecognizeActivity extends ActionBarActivity {
             Bundle data = new Bundle();
 
             try {
-                String XH=mEditTextXH.getText().toString();
+                String XH = mEditTextXH.getText().toString();
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
                 SimpleDateFormat df1 = new SimpleDateFormat("yyyyMMddHHmmss");
-                String scptdate=df.format(new Date());
-                String scptdate1=df1.format(new Date());
+                String scptdate = df.format(new Date());
+                String scptdate1 = df1.format(new Date());
                 String var1 = testInsertOracle(XH, scptdate);
                 String var2 = testUpload(XH, scptdate1);
-                String result = var1 +"\n"+var2;
+                String result = var1 + "\n" + var2;
                 data.putString("value", result);
                 msg.setData(data);
                 handler.sendMessage(msg);
 //                mEditText.setText(msg);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 // TODO Auto-generated catch block
 //            e.printStackTrace();
-                Log.e("error",e.getMessage());
+                Log.e("error", e.getMessage());
             }
 
 
         }
     };
+
     // 调用远程webservice获取省份列表
-    public String testInsertOracle(String tpmc,String sctpdate) {
-        String tmp="";
+    public String testInsertOracle(String tpmc, String sctpdate) {
+        String tmp = "";
         // 调用 的方法
         String methodName = "testInsertOracle";
 //        String methodName = "greetings";
@@ -530,8 +575,8 @@ public class RecognizeActivity extends ActionBarActivity {
             // 实例化SoapObject对象
             SoapObject soapObject = new SoapObject(SERVICE_NAMESPACE,
                     methodName);
-            soapObject.addProperty("param1",tpmc);
-            soapObject.addProperty("param2",sctpdate);
+            soapObject.addProperty("param1", tpmc);
+            soapObject.addProperty("param2", sctpdate);
             // 使用SOAP1.1协议创建Envelop对象
             SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(
                     SoapEnvelope.VER11);
@@ -554,13 +599,12 @@ public class RecognizeActivity extends ActionBarActivity {
 //                SoapObject detail = (SoapObject) result.getProperty(methodName
 //                        + "Result");
                 // 解析服务器响应的SOAP消息
-                tmp=result.getProperty(0).toString();
+                tmp = result.getProperty(0).toString();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
 //            e.printStackTrace();
-            tmp=e.getMessage();
+            tmp = e.getMessage();
         }
 //        catch (SoapFault e) {
 //            // TODO Auto-generated catch block
@@ -578,10 +622,11 @@ public class RecognizeActivity extends ActionBarActivity {
 //        }
         return tmp;
     }
+
     //读取android sdcard上的图片
-    public String testUpload(String XH, String scptdate){
+    public String testUpload(String XH, String scptdate) {
         String tmp = "";
-        try{
+        try {
 
             mBitmap = ImageHelper.loadSizeLimitedBitmapFromUri(
                     mImageUri, getContentResolver());
@@ -597,18 +642,21 @@ public class RecognizeActivity extends ActionBarActivity {
 //                doRecognize();
 
 
-
 //            String srcUrl = "/sdcard/"; //路径
 //
 //            String fileName = "aa.jpg";  //文件名
 //
 //            FileInputStream fis = new FileInputStream(srcUrl + fileName);
 //
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            byte[] bitmapBytes = baos.toByteArray();
-            String uploadBuffer = Base64.encodeToString(bitmapBytes, Base64.DEFAULT);
+
+                Bitmap tmpBitmap= imageZoom(mBitmap);
+
+//                mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                tmpBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                byte[] bitmapBytes = baos.toByteArray();
+                String uploadBuffer = Base64.encodeToString(bitmapBytes, Base64.DEFAULT);
 
 //            byte[] buffer = new byte[1024];
 //
@@ -622,31 +670,31 @@ public class RecognizeActivity extends ActionBarActivity {
 
 //            String uploadBuffer = new String(Base64.encode(baos.toByteArray()));  //进行Base64编码
 
-            String methodName = "uploadImage";
+                String methodName = "uploadImage";
 
 //            String XH=mEditTextXH.getText().toString();
 //            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
 //            String scptdate=df.format(new Date());
-            String fileName=XH + scptdate+".jpg";
+                String fileName = XH + scptdate + ".jpg";
 //            String fileName="test.jpg";
 
-            tmp=connectWebService(methodName, fileName, uploadBuffer);   //调用webservice
+                tmp = connectWebService(methodName, fileName, uploadBuffer);   //调用webservice
 
-            Log.i("connectWebService", "start");
-            baos.flush();
-            baos.close();
+                Log.i("connectWebService", "start");
+                baos.flush();
+                baos.close();
             }
 //            fis.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
 //            e.printStackTrace();
-            tmp=e.getMessage();
+            tmp = e.getMessage();
         }
         return tmp;
     }
 
-    private String connectWebService(String methodName,String fileName, String imageBuffer) {
-        String tmp="";
+    private String connectWebService(String methodName, String fileName, String imageBuffer) {
+        String tmp = "";
         String namespace = SERVICE_NAMESPACE;  // 命名空间，即服务器端得接口，注：后缀没加 .wsdl，
 
         //服务器端我是用x-fire实现webservice接口的
@@ -676,13 +724,14 @@ public class RecognizeActivity extends ActionBarActivity {
             httpTranstation.call(namespace, envelope);
 
             Object result = envelope.getResponse();
-            tmp=result.toString();;
+            tmp = result.toString();
+            ;
             Log.i("connectWebService", result.toString());
 
         } catch (Exception e) {
 
 //            e.printStackTrace();
-            tmp=e.getMessage();
+            tmp = e.getMessage();
         }
 
         return tmp;
