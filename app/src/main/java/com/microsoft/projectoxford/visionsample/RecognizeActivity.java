@@ -547,9 +547,18 @@ public class RecognizeActivity extends ActionBarActivity {
                 SimpleDateFormat df1 = new SimpleDateFormat("yyyyMMddHHmmss");
                 String scptdate = df.format(new Date());
                 String scptdate1 = df1.format(new Date());
-                String var1 = testInsertOracle(XH, scptdate);
                 String var2 = testUpload(XH, scptdate1);
-                String result = var1 + "\n" + var2;
+                String var1="";
+                String result ="";
+                if (var2.equals("failed"))
+                {
+                    result = "上传图片失败!" +   var2   ;
+                }
+                else {
+                     var1 = testInsertOracle(XH, scptdate, var2);
+                     result = "上传图片成功!" + "图片路径为：" +   var2  + "\n" + var1;
+                }
+
                 data.putString("value", result);
                 msg.setData(data);
                 handler.sendMessage(msg);
@@ -565,7 +574,7 @@ public class RecognizeActivity extends ActionBarActivity {
     };
 
     // 调用远程webservice获取省份列表
-    public String testInsertOracle(String tpmc, String sctpdate) {
+    public String testInsertOracle(String tpmc, String sctpdate,String filename) {
         String tmp = "";
         // 调用 的方法
         String methodName = "testInsertOracle";
@@ -577,6 +586,7 @@ public class RecognizeActivity extends ActionBarActivity {
                     methodName);
             soapObject.addProperty("param1", tpmc);
             soapObject.addProperty("param2", sctpdate);
+            soapObject.addProperty("param3", filename);
             // 使用SOAP1.1协议创建Envelop对象
             SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(
                     SoapEnvelope.VER11);
