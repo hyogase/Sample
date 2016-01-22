@@ -78,6 +78,7 @@ import org.ksoap2.SoapFault;
 import org.ksoap2.serialization.SoapObject;
 import org.ksoap2.serialization.SoapSerializationEnvelope;
 import org.ksoap2.transport.HttpTransportSE;
+import org.w3c.dom.Text;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.util.Date;
@@ -102,7 +103,7 @@ public class RecognizeActivity extends ActionBarActivity {
     // The edit to show status and result.
     private EditText mEditText;
     private EditText mEditTextXH;
-
+    private TextView mTitle;
     private VisionServiceClient client;
 
     // Flag to indicate the request of the next task to be performed
@@ -114,12 +115,18 @@ public class RecognizeActivity extends ActionBarActivity {
     private float scaleHeight;
     private Matrix matrix;
 
+    private String xm;
+    private String ccdm;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recognize);
 
-
+        Intent intent=getIntent();
+        ccdm=intent.getStringExtra("ccdm");
+        xm=intent.getStringExtra("xm");
+        mTitle=(TextView) findViewById(R.id.title);
+        mTitle.setText(xm + ",欢迎您");
         if (client == null) {
             client = new VisionServiceRestClient(getString(R.string.subscription_key));
         }
@@ -491,7 +498,7 @@ public class RecognizeActivity extends ActionBarActivity {
     //testInsertOracleButton
     // Called when the "testInsertOracle" button is clicked.
     public void testInsertOracleButton(View view) {
-        mEditText.setText("");
+        mEditText.setText("正在保存入数据库。");
         // 开启一个子线程，进行网络操作，等待有返回结果，使用handler通知UI
         new Thread(networkTask).start();
 
@@ -576,8 +583,10 @@ public class RecognizeActivity extends ActionBarActivity {
     // 调用远程webservice获取省份列表
     public String testInsertOracle(String tpmc, String sctpdate,String filename) {
         String tmp = "";
+        mEditText.setText("正在上传中，请稍候...");
         // 调用 的方法
-        String methodName = "testInsertOracle";
+//        String methodName = "testInsertOracle";
+        String methodName = "testInsertOracle_new";
 //        String methodName = "greetings";
 
         try {
@@ -587,6 +596,7 @@ public class RecognizeActivity extends ActionBarActivity {
             soapObject.addProperty("param1", tpmc);
             soapObject.addProperty("param2", sctpdate);
             soapObject.addProperty("param3", filename);
+            soapObject.addProperty("param4", ccdm);
             // 使用SOAP1.1协议创建Envelop对象
             SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(
                     SoapEnvelope.VER11);
@@ -635,7 +645,7 @@ public class RecognizeActivity extends ActionBarActivity {
 
     //读取android sdcard上的图片
     public String testUpload(String XH, String scptdate) {
-        String tmp = "";
+        String tmp = "failed";
         try {
 
             mBitmap = ImageHelper.loadSizeLimitedBitmapFromUri(

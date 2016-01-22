@@ -3,7 +3,7 @@
 
     <!-- Please refer to http://oxford-portal.azurewebsites.net/doc/general/subscription-key-mgmt to get your subscription key -->
     <!-- If you have one subscription key, you can add it here to use the service -->
-    <string name="subscription_key">66084f519ea94e5ebff85ceb4e981687</string>
+    <string name="subscription_key">c57d21c8df3f41bd8c260053dd4b2a7a</string>
     <string name="add_subscription_key_tip_title">请联系管理员更新许可证</string>
     <string name="add_subscription_key_tip">请联系管理员更新许可证</string>
 
@@ -16,5 +16,6 @@
     <string name="select_an_image">选择图片</string>
     <string name="take_photo">照相</string>
     <string name="select_image_in_album">图库</string>
+    <string name="title_activity_login">箱号识别</string>
 
 </resources>

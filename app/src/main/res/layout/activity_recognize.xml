@@ -18,6 +18,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="4dp"
+            android:id="@+id/title"
             android:text="请选择图片"/>
         <LinearLayout
             android:orientation="vertical"
@@ -27,7 +28,7 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="箱号识别图片"
+                android:text="相机"
                 android:id="@+id/buttonSelectImage"
                 android:onClick="selectImage"/>
 

@@ -87,8 +87,8 @@
     <orderEntry type="library" exported="" name="appcompat-v7-21.0.3" level="project" />
     <orderEntry type="library" exported="" name="gson-2.3.1" level="project" />
     <orderEntry type="library" exported="" name="1_gson-2.3.1" level="project" />
-    <orderEntry type="library" exported="" name="ksoap2-android-assembly-3.5.0-jar-with-dependencies" level="project" />
     <orderEntry type="library" exported="" name="commons-io-2.4" level="project" />
+    <orderEntry type="library" exported="" name="ksoap2-android-assembly-3.0.0-jar-with-dependencies" level="project" />
     <orderEntry type="library" exported="" name="support-v4-21.0.3" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-21.0.3" level="project" />
     <orderEntry type="library" exported="" name="vision-0.4.91" level="project" />
